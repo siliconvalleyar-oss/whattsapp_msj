@@ -1,11 +1,13 @@
+require('dotenv').config();
+
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const fs = require('fs');
 const readline = require('readline');
 
-const MENSAJE = `Buenas tardes. queria consultar precio y stock ?`;
-
-const CSV_PATH = './contactos.csv';
+const MENSAJE = process.env.WHATSAPP_MESSAGE || 'Buenas tardes. queria consultar precio y stock ?';
+const CSV_PATH = process.env.CSV_PATH || './contactos.csv';
+const DELAY_MS = parseInt(process.env.DELAY_MS || '3000', 10);
 
 const client = new Client({
     authStrategy: new LocalAuth()
@@ -28,12 +30,11 @@ async function enviarMensajes() {
 
     let isFirstLine = true;
     for await (const line of rl) {
-        if (isFirstLine) { isFirstLine = false; continue; } // saltar cabecera
-        if (line.trim() === "") continue;
+        if (isFirstLine) { isFirstLine = false; continue; }
+        if (line.trim() === '') continue;
         const partes = line.split('|');
         if (partes.length >= 1) {
             let telefono = partes[0].trim();
-            // Limpiar caracteres no numéricos excepto '+'
             telefono = telefono.replace(/[^0-9+]/g, '');
             if (!telefono.startsWith('+')) telefono = '+' + telefono;
             contactos.push({ telefono, nombre: partes[1] || '', direccion: partes[2] || '' });
@@ -47,8 +48,7 @@ async function enviarMensajes() {
         try {
             await client.sendMessage(chatId, MENSAJE);
             console.log(`✅ [${i+1}/${contactos.length}] Enviado a ${c.telefono} (${c.nombre})`);
-            // Esperar 3 segundos entre mensajes para evitar bloqueos
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            await new Promise(resolve => setTimeout(resolve, DELAY_MS));
         } catch (err) {
             console.error(`❌ Error al enviar a ${c.telefono}:`, err.message);
         }

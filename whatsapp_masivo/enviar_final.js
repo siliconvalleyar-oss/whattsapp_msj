@@ -1,26 +1,36 @@
+require('dotenv').config();
+
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const fs = require('fs');
 const readline = require('readline');
 
-const MENSAJE = `Buenas tardes. queria consultar precio y stock ?`;
+const MENSAJE = process.env.WHATSAPP_MESSAGE || 'Buenas tardes. queria consultar precio y stock ?';
+const CSV_PATH = process.env.CSV_PATH || './contactos.csv';
+const LOG_PATH = process.env.LOG_PATH || './envio.log';
+const SESSION_PATH = process.env.SESSION_PATH || './session';
+const HEADLESS_ENABLED = process.env.HEADLESS === 'true';
+const DELAY_MS = parseInt(process.env.DELAY_MS || '4000', 10);
+const INITIAL_DELAY_MS = parseInt(process.env.INITIAL_DELAY_MS || '8000', 10);
 
-const CSV_PATH = './contactos.csv';
-const LOG_PATH = './envio.log';
-
-// Limpia el número: deja solo dígitos y el signo '+'
 function normalizarNumero(raw) {
     let limpio = raw.replace(/[^\d+]/g, '');
     if (!limpio.startsWith('+')) limpio = '+' + limpio;
     return limpio;
 }
 
+const puppeteerConfig = {
+    headless: HEADLESS_ENABLED,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+};
+const chromePath = process.env.CHROME_PATH;
+if (chromePath) {
+    puppeteerConfig.executablePath = chromePath;
+}
+
 const client = new Client({
-    authStrategy: new LocalAuth(),
-    puppeteer: {
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-    }
+    authStrategy: new LocalAuth({ dataPath: SESSION_PATH }),
+    puppeteer: puppeteerConfig
 });
 
 client.on('qr', qr => {
@@ -29,8 +39,8 @@ client.on('qr', qr => {
 });
 
 client.on('ready', async () => {
-    console.log('✅ Conectado. Esperando 8 segundos para estabilizar...');
-    await new Promise(r => setTimeout(r, 8000));
+    console.log('✅ Conectado. Esperando segundos para estabilizar...');
+    await new Promise(r => setTimeout(r, INITIAL_DELAY_MS));
     await enviarMensajes();
 });
 
@@ -79,7 +89,7 @@ async function enviarMensajes() {
                 }
             }
         }
-        await new Promise(r => setTimeout(r, 4000)); // pausa entre contactos
+        await new Promise(r => setTimeout(r, DELAY_MS));
     }
 
     console.log('\n🏁 Envío completado.');

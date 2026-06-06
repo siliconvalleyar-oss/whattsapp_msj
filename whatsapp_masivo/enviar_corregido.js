@@ -1,30 +1,37 @@
+require('dotenv').config();
+
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const fs = require('fs');
 const readline = require('readline');
 
-const MENSAJE = `Buenas tardes. queria consultar precio y stock ?`;
+const MENSAJE = process.env.WHATSAPP_MESSAGE || 'Buenas tardes. queria consultar precio y stock ?';
+const CSV_PATH = process.env.CSV_PATH || './contactos.csv';
+const LOG_PATH = process.env.LOG_PATH || './envio.log';
+const HEADLESS_ENABLED = process.env.HEADLESS === 'true';
+const DELAY_MS = parseInt(process.env.DELAY_MS || '4000', 10);
+const INITIAL_DELAY_MS = parseInt(process.env.INITIAL_DELAY_MS || '5000', 10);
 
-const CSV_PATH = './contactos.csv';
-const LOG_PATH = './envio.log';
-
-// Función para formatear número: elimina todo excepto dígitos y luego agrega el código de país
 function formatearNumero(numeroRaw) {
-    // Eliminar espacios, guiones, paréntesis y el signo '+' inicial (lo volveremos a poner)
     let limpio = numeroRaw.replace(/[^\d+]/g, '');
-    // Si tiene '+' al inicio, lo respetamos, si no, se lo agregamos
     if (!limpio.startsWith('+')) {
-        // Si el número no tiene código de país, asumimos que es Argentina (54)
-        // pero nuestros números ya tienen el código, solo falta asegurar el '+'
         limpio = '+' + limpio;
     }
-    // Verificar que tenga al menos 10 dígitos después del código
     return limpio;
+}
+
+const puppeteerConfig = {
+    headless: HEADLESS_ENABLED,
+    args: ['--no-sandbox']
+};
+const chromePath = process.env.CHROME_PATH;
+if (chromePath) {
+    puppeteerConfig.executablePath = chromePath;
 }
 
 const client = new Client({
     authStrategy: new LocalAuth(),
-    puppeteer: { headless: true, args: ['--no-sandbox'] }
+    puppeteer: puppeteerConfig
 });
 
 client.on('qr', qr => {
@@ -39,8 +46,8 @@ client.on('authenticated', () => {
 
 client.on('ready', async () => {
     console.log('✅ Bot conectado y listo.');
-    console.log('Esperando 5 segundos para estabilizar la sesión...');
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    console.log('Esperando segundos para estabilizar la sesión...');
+    await new Promise(resolve => setTimeout(resolve, INITIAL_DELAY_MS));
     await enviarMensajes();
 });
 
@@ -76,12 +83,11 @@ async function enviarMensajes() {
     }
 
     console.log(`📤 Se enviará mensaje a ${contactos.length} contactos.\n`);
-    
+
     for (let i = 0; i < contactos.length; i++) {
         const c = contactos[i];
         const chatId = `${c.telefono}@c.us`;
         try {
-            // Verificar si el número es válido para WhatsApp antes de enviar
             const numberDetails = await client.getNumberId(c.telefono);
             if (!numberDetails) {
                 console.log(`❌ Número no registrado en WhatsApp: ${c.telefono} (${c.nombre})`);
@@ -89,10 +95,8 @@ async function enviarMensajes() {
             }
             await client.sendMessage(chatId, MENSAJE);
             console.log(`✅ [${i+1}/${contactos.length}] Enviado a ${c.telefono} (${c.nombre})`);
-            // Log en archivo
             fs.appendFileSync(LOG_PATH, `${new Date().toISOString()} - Enviado a ${c.telefono} ${c.nombre}\n`);
-            // Espera entre mensajes
-            await new Promise(resolve => setTimeout(resolve, 4000));
+            await new Promise(resolve => setTimeout(resolve, DELAY_MS));
         } catch (err) {
             console.error(`❌ Error enviando a ${c.telefono} (${c.nombre}): ${err.message || err}`);
             fs.appendFileSync(LOG_PATH, `${new Date().toISOString()} - ERROR ${c.telefono}: ${err.message || err}\n`);
