@@ -1,14 +1,14 @@
 {
   "name": "whatsapp_prj",
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "enviar": "node whatsapp_masivo/enviar.js",
+    "web": "cd web && npm start",
+    "cli": "bash scripts_tools/cli.sh",
+    "setup": "bash scripts_tools/setup.sh",
+    "start": "node whatsapp_masivo/enviar.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.19.5"
