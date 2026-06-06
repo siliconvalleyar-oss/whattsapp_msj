@@ -27,6 +27,12 @@ whatsapp_masivo/session_moviles/
 *.log
 whatsapp_masivo/*.log
 
+# ─── Web platform ───
+web/node_modules/
+web/package-lock.json
+web/data/
+web/.env
+
 # ─── Variables de entorno ───
 .env
 .env.local

@@ -1,0 +1,15 @@
+services:
+  whatsapp-bot:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env
+    environment:
+      - PORT=3000
+      - HOST=0.0.0.0
+      - HEADLESS=true
+    restart: unless-stopped
+    cap_add:
+      - SYS_ADMIN
