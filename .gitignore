@@ -1,25 +1,31 @@
 # ─── Dependencias ───
 node_modules/
 package-lock.json
+whatsapp_masivo/node_modules/
+whatsapp_masivo/package-lock.json
 
 # ─── Datos sensibles: contactos ───
 # Los CSV contienen nombres, teléfonos y direcciones de contactos.
 # NO subir a git — son datos privados de clientes/proveedores.
 *.csv
+whatsapp_masivo/*.csv
 
 # ─── Sesiones de WhatsApp ───
 # Archivos de autenticación de whatsapp-web.js.
 # Contienen credenciales de sesión que permiten acceder a WhatsApp.
 .wwebjs_auth/
 .wwebjs_cache/
+whatsapp_masivo/.wwebjs_auth/
+whatsapp_masivo/.wwebjs_cache/
 session/
 session_moviles/
-whatsapp_masivo/*
-
+whatsapp_masivo/session/
+whatsapp_masivo/session_moviles/
 
 # ─── Logs de envío ───
-# Los logs contienen estados, timestamps y datos de contactos.
+# Los logs se quedan locales para trazabilidad.
 *.log
+whatsapp_masivo/*.log
 
 # ─── Variables de entorno ───
 .env
