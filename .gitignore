@@ -1,0 +1,40 @@
+# ─── Dependencias ───
+node_modules/
+package-lock.json
+
+# ─── Datos sensibles: contactos ───
+# Los CSV contienen nombres, teléfonos y direcciones de contactos.
+# NO subir a git — son datos privados de clientes/proveedores.
+*.csv
+
+# ─── Sesiones de WhatsApp ───
+# Archivos de autenticación de whatsapp-web.js.
+# Contienen credenciales de sesión que permiten acceder a WhatsApp.
+.wwebjs_auth/
+.wwebjs_cache/
+session/
+session_moviles/
+whatsapp_masivo/*
+
+
+# ─── Logs de envío ───
+# Los logs contienen estados, timestamps y datos de contactos.
+*.log
+
+# ─── Variables de entorno ───
+.env
+.env.local
+.env.production
+
+# ─── Sistema operativo ───
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# ─── IDEs ───
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
