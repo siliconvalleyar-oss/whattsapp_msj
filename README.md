@@ -13,8 +13,9 @@ Envía mensajes personalizados a una lista de contactos vía WhatsApp Web. Inclu
 - Autenticación persistente (sin escanear QR cada vez)
 - Validación de números (solo envía a números con WhatsApp)
 - Logging de cada envío (estado, timestamp)
-- Reanudación automática (no reenvía a contactos ya procesados)
-- Múltiples versiones del script para distintos casos
+- Reintentos automáticos en caso de error
+- Pausa configurable entre mensajes
+- Timeout global configurable
 
 ---
 
@@ -22,28 +23,33 @@ Envía mensajes personalizados a una lista de contactos vía WhatsApp Web. Inclu
 
 ```
 whatsapp_prj/
+├── .env.example            # Template de configuración (copiar a .env)
 ├── .gitignore              # Archivos ignorados (sesiones, CSVs, logs)
 ├── .wwebjs_auth/           # 📛 Sesión WhatsApp (NO subir)
 ├── .wwebjs_cache/          # 📛 Caché auth (NO subir)
 ├── LEARNING_SKILL.md       # Guía de aprendizaje
 ├── README.md               # Este archivo
-├── enviar_msj.sh           # Script shell orquestador
 ├── package.json            # Dependencias
 ├── prueba.js               # Script de prueba simple
 ├── test_simple.js          # Otra prueba
 │
 └── whatsapp_masivo/
-    ├── *.csv               # 📛 Contactos (NO subir)
-    ├── enviar.js           # Envío v1
-    ├── enviar_v2.js        # Envío v2
-    ├── enviar_final.js     # Envío v3
-    ├── enviar_todos.js     # A toda la lista
-    ├── enviar_solo_moviles.js
-    ├── enviar_corregido.js # Versión corregida
-    ├── session/            # 📛 Sesión (NO subir)
-    ├── session_moviles/    # 📛 Sesión móviles (NO subir)
-    ├── *.log               # 📛 Logs (NO subir)
-    └── node_modules/       # 📛 Dependencias (NO subir)
+    ├── lib/                    # 📁 Módulos reutilizables
+    │   ├── config.js           #   Config desde .env
+    │   ├── phone.js            #   Normalización de números
+    │   ├── logger.js           #   Logging a archivo
+    │   └── sender.js           #   Núcleo: cliente, envío, reintentos
+    ├── enviar.js               # Entry point principal
+    ├── enviar_solo_moviles.js  # Solo móviles ✅ (el que funcionó)
+    ├── enviar_todos.js         # Toda la lista
+    ├── enviar_v2.js            # Con timeout de 5 min
+    ├── enviar_final.js         # Con reintentos
+    ├── enviar_corregido.js     # Contactos generales
+    ├── session/                # 📛 Sesión (NO subir)
+    ├── session_moviles/        # 📛 Sesión móviles (NO subir)
+    ├── *.csv                   # 📛 Contactos (NO subir)
+    ├── *.log                   # 📛 Logs (NO subir)
+    └── node_modules/           # 📛 Dependencias (NO subir)
 ```
 
 > 📛 = Ignorado por `.gitignore`
@@ -52,42 +58,99 @@ whatsapp_prj/
 
 ## 🚀 Cómo usar
 
-### 1. Instalar
+### 1. Clonar e instalar
 ```bash
 cd whatsapp_prj
 npm install
+cd whatsapp_masivo && npm install && cd ..
 ```
 
-### 2. Preparar contactos
-Crea un CSV con formato: `nombre,numero,direccion`
+### 2. Configurar variables de entorno
+```bash
+cp .env.example .env
+# Editar .env con el mensaje, rutas, sesión, etc.
+```
 
-### 3. Configurar mensaje
-Edita el script `enviar_msj.sh` o los JS en `whatsapp_masivo/`
+### 3. Preparar contactos
+Crea un archivo CSV con formato `teléfono|nombre|dirección`.
+El separador es `|` (pipe). Sin espacios alrededor.
+
+Ejemplo:
+```
+teléfono|nombre|dirección
+5491120252485|Juan Pérez|Av. Siempreviva 742
+5491170379239|María García|
+```
 
 ### 4. Ejecutar
 ```bash
-./enviar_msj.sh
-# o
 node whatsapp_masivo/enviar.js
+# o elegir un wrapper específico:
+node whatsapp_masivo/enviar_solo_moviles.js
+node whatsapp_masivo/enviar_todos.js
 ```
 
 ### 5. Escanear QR
-La primera vez aparece un QR en la terminal. Escanéalo con WhatsApp → Dispositivos vinculados.
+La primera vez aparece un código QR en la terminal.
+Abrí WhatsApp en tu celular → Dispositivos vinculados → Vincular un dispositivo.
+La sesión se guarda para no pedir QR nuevamente.
 
 ---
 
-## 📜 Scripts
+## 📜 Scripts disponibles
 
-| Script | Descripción |
-|---|---|
-| `prueba.js` | Envío de prueba a 1 contacto |
-| `whatsapp_masivo/enviar.js` | Envío masivo v1 |
-| `whatsapp_masivo/enviar_v2.js` | Envío masivo v2 |
-| `whatsapp_masivo/enviar_final.js` | Versión final |
-| `whatsapp_masivo/enviar_todos.js` | Enviar a toda la lista |
-| `whatsapp_masivo/enviar_solo_moviles.js` | Solo móviles |
-| `whatsapp_masivo/enviar_corregido.js` | Versión corregida |
-| `enviar_msj.sh` | Script orquestador completo |
+Todos los scripts son **wrappers delgados** (~10 líneas) que usan los módulos compartidos en `lib/`.
+
+| Script | CSV por defecto | Log | Sesión | Particularidad |
+|---|---|---|---|---|
+| `enviar.js` | `.env` o `contactos_moviles.csv` | `envio_moviles.log` | `./session_moviles` | Entry point principal |
+| `enviar_solo_moviles.js` | `contactos_moviles.csv` | `envio_moviles.log` | `./session_moviles` | ✅ El que funcionó |
+| `enviar_todos.js` | `contactos_todos.csv` | `envio_todos.log` | `./session_moviles` | Toda la lista |
+| `enviar_v2.js` | `contactos.csv` | `envio.log` | `./session` | Timeout 5 min |
+| `enviar_final.js` | `contactos.csv` | `envio.log` | `./session` | Reintentos |
+| `enviar_corregido.js` | `contactos.csv` | `envio.log` | Default | Contactos generales |
+
+---
+
+## ⚙️ Variables de entorno
+
+Ver [`.env.example`](./.env.example) para la lista completa.
+
+| Variable | Default | Descripción |
+|---|---|---|
+| `WHATSAPP_MESSAGE` | `"Buenas tardes..."` | Texto del mensaje |
+| `CSV_PATH` | `./contactos_moviles.csv` | Ruta al CSV de contactos |
+| `LOG_PATH` | `./envio_moviles.log` | Ruta al archivo de log |
+| `SESSION_PATH` | `./session_moviles` | Directorio de sesión |
+| `CHROME_PATH` | `/opt/google/chrome/...` | Ejecutable de Chrome |
+| `HEADLESS` | `false` | `true` = sin ventana del navegador |
+| `DELAY_MS` | `4000` | Pausa entre mensajes (ms) |
+| `INITIAL_DELAY_MS` | `5000` | Pausa inicial al conectar (ms) |
+| `MAX_RETRIES` | `2` | Reintentos por mensaje fallido |
+| `RETRY_DELAY_MS` | `4000` | Pausa entre reintentos (ms) |
+| `TIMEOUT_MINUTES` | `0` | Timeout global (0 = sin timeout) |
+
+---
+
+## 🏗️ Arquitectura
+
+```
+enviar.js (wrapper ~5 líneas)
+    └── lib/sender.js  (núcleo reutilizable)
+            ├── lib/config.js   ← Config desde .env
+            ├── lib/phone.js    ← Normalización telefónica
+            └── lib/logger.js   ← Logging a archivo
+```
+
+- Cada wrapper solo establece defaults específicos y llama a `sender.start()`
+- El núcleo (`sender.js`) maneja cliente, lectura CSV, envío con reintentos, logging y timeout
+- Agregar un nuevo caso de uso = crear un wrapper de 5 líneas
+
+---
+
+## 📚 Aprender más
+
+Ver [`LEARNING_SKILL.md`](./LEARNING_SKILL.md) para una guía paso a paso sobre cómo funciona `whatsapp-web.js`.
 
 ---
 
@@ -97,16 +160,10 @@ La primera vez aparece un QR en la terminal. Escanéalo con WhatsApp → Disposi
 |---|---|---|
 | Contactos | `*.csv` | Nombres, teléfonos y direcciones privadas |
 | Sesiones | `.wwebjs_auth/`, `session/` | Acceso completo a tu WhatsApp |
-| Logs | `*.log` | Registro de envíos |
-| Dependencias | `node_modules/` | Cientos de archivos innecesarios |
+| Logs | `*.log` | Registro de envíos (teléfonos, estados) |
+| Dependencias | `node_modules/` | Cientos de archivos innecesarios en el repo |
 
 El `.gitignore` ya excluye todo esto automáticamente.
-
----
-
-## 📚 Aprender más
-
-Ver [`LEARNING_SKILL.md`](./LEARNING_SKILL.md) para una guía paso a paso.
 
 ---
 
@@ -121,23 +178,15 @@ Ver [`LEARNING_SKILL.md`](./LEARNING_SKILL.md) para una guía paso a paso.
 ## 🐙 Subir a Git
 
 ```bash
-# Inicializar repo
-git init
-
-# Agregar archivos (el .gitignore ya excluye datos sensibles)
-git add .
-
-# Verificar qué se va a commitear
+# Verificar que no se suben datos sensibles
 git status
 
-# Hacer el primer commit
-git commit -m "Initial commit: WhatsApp bulk messaging system"
+# Agregar y commitear
+git add .
+git commit -m "Descripción de los cambios"
 
-# Conectar con repositorio remoto (crear en GitHub/GitLab primero)
-git remote add origin <url-del-repositorio>
-
-# Subir
-git push -u origin main
+# Subir al remoto
+git push origin main
 ```
 
-> ⚠️ Antes del primer commit, revisa `git status` para confirmar que NO se están subiendo archivos sensibles (`.wwebjs_auth/`, `session/`, `*.csv`, `*.log`, `node_modules/`).
+> ⚠️ Antes de commitear, revisá `git status` para confirmar que NO se están subiendo archivos sensibles (`.wwebjs_auth/`, `session/`, `*.csv`, `*.log`, `node_modules/`).
