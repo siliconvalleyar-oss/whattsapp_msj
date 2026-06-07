@@ -4,7 +4,7 @@
 #include <string>
 #include "csv.h"
 
-// Reemplaza placeholders {{nombre}}, {{numero}}, {{direccion}} en el mensaje
+// Reemplaza placeholders ({{nombre}}, {{numero}}, {{direccion}} y variantes) en el mensaje
 // con los valores del contacto.
 std::string applyTemplate(const std::string& tpl, const Contact& contact);
 

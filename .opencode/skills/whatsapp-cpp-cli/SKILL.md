@@ -23,7 +23,7 @@ cpp/
     ├── console.cpp/h # UI de terminal (colores, menús, input)
     ├── csv.cpp/h     # Lector/filtro de CSV (formato: teléfono|nombre|dirección)
     ├── config.cpp/h  # Carga .env con Config::get() / getInt() / getBool()
-    ├── template.cpp/h# Reemplazo de placeholders {{nombre}} {{numero}} {{direccion}}
+    ├── template.cpp/h# Reemplazo de placeholders {{nombre}}, {{numero}}, {{direccion}} y variantes
     ├── runner.cpp/h  # Ejecuta scripts Node con popen(), lista scripts disponibles
     └── stats.cpp/h   # Parseo de logs, estadísticas de envío
 ```
@@ -70,7 +70,7 @@ O en un paso: `cmake -B build && cmake --build build && ./build/whatsapp_cli`
 ### runner.cpp
 - `runCommand(cmd)` — `popen()` con captura de stdout/stderr
 - `runNodeScript(name)` — `cd whatsapp_masivo/ && node <script>`
-- `listAvailableScripts()` — scripts que matchean `enviar_*.js`
+- `listAvailableScripts()` — scripts que matchean `enviar_*.js` e incluye `enviar.js`
 - `checkNodeAvailable()` — verifica que node exista
 
 ### stats.cpp
@@ -90,8 +90,13 @@ teléfono|nombre|dirección
 
 ```
 {{nombre}}    → nombre del contacto
+{{Nombre}}    → nombre (capitalizado)
 {{numero}}    → teléfono (solo dígitos)
+{{Numero}}    → teléfono (capitalizado)
+{{telefono}}  → teléfono (variante minúscula)
 {{direccion}} → dirección
+{{Direccion}} → dirección (capitalizado)
+{{dir}}       → dirección (abreviado)
 ```
 
 Ejemplo: `"Hola {{nombre}}, te escribo para confirmar la entrega en {{direccion}}."`
@@ -105,9 +110,9 @@ Ejemplo: `"Hola {{nombre}}, te escribo para confirmar la entrega en {{direccion}
 | SESSION_PATH | ./session_moviles | Ruta a sesión de WhatsApp |
 | WHATSAPP_MESSAGE | Buenos días... | Plantilla de mensaje |
 | DELAY_MS | 4000 | Delay entre envíos |
-| MAX_RETRIES | 3 | Reintentos por fallo |
-| RETRY_DELAY_MS | 5000 | Delay entre reintentos |
+| MAX_RETRIES | 2 | Reintentos por fallo |
+| RETRY_DELAY_MS | 4000 | Delay entre reintentos |
 | HEADLESS | false | Chrome headless o no |
-| TIMEOUT_MINUTES | 30 | Timeout global |
-| CHROME_PATH | - | Path a Chrome ejecutable |
-| INITIAL_DELAY_MS | 3000 | Delay inicial tras conexión |
+| TIMEOUT_MINUTES | 0 (sin timeout) | Timeout global |
+| CHROME_PATH | /opt/google/chrome/google-chrome | Path a Chrome ejecutable |
+| INITIAL_DELAY_MS | 5000 | Delay inicial tras conexión |

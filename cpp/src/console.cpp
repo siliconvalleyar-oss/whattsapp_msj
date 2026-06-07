@@ -27,7 +27,6 @@ void clear() {
 
 void pause() {
     std::cout << "\nPresiona Enter para continuar...";
-    std::cin.ignore(10000, '\n');
     std::cin.get();
 }
 

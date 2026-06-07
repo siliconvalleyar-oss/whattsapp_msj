@@ -180,14 +180,6 @@ void menuPlantillas() {
 // ─── Main ────────────────────────────────────────────────────────
 
 int main() {
-    console::clear();
-    std::cout << console::bold(console::cyan(R"(
-╔══════════════════════════════════════════╗
-║   📱 WhatsApp Masivo — C++ CLI          ║
-║   Controla los envíos desde terminal     ║
-╚══════════════════════════════════════════╝
-)"));
-
     if (!checkNodeAvailable()) {
         console::error("Node.js no está disponible. Instalalo primero.");
         return 1;
@@ -199,7 +191,7 @@ int main() {
 
     while (true) {
         int opt = console::menu(
-            "MENÚ PRINCIPAL",
+            "📱 WhatsApp Masivo — MENÚ PRINCIPAL",
             {
                 "📤  Ejecutar envío WhatsApp",
                 "📇  Ver contactos (CSV)",
